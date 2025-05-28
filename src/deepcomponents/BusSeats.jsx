@@ -28,6 +28,10 @@ const BusSeats = ({ token }) => {
         fetchBusDetails()
     }, [busId])
 
+    const handleBack = () => {
+        window.history.back();
+    };
+
     const handleBook = async (seatId) => {
         if (!token) {
           alert('Please login to book a seat');
@@ -55,8 +59,7 @@ const BusSeats = ({ token }) => {
           alert(error.response?.data?.error || 'Please login to book a seat')
           navigate('/login');
         }
-      };
-      
+    };
 
     if (isLoading) {
         return (
@@ -72,6 +75,14 @@ const BusSeats = ({ token }) => {
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     <strong className="font-bold">Error! </strong>
                     <span className="block sm:inline">{error}</span>
+                </div>
+                <div className="flex justify-end gap-4 mt-6">
+                    <button
+                        onClick={handleBack}
+                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        ← Back
+                    </button>
                 </div>
             </div>
         )
@@ -138,7 +149,7 @@ const BusSeats = ({ token }) => {
                 </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                 <div className="p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-6">Select Your Seat</h2>
                     
@@ -174,12 +185,21 @@ const BusSeats = ({ token }) => {
                     </div>
                 </div>
             </div>
-            <button
-  onClick={() => navigate('/my-bookings')}
-  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
->
-  View Booking Details
-</button>
+
+            <div className="flex justify-between">
+                <button
+                    onClick={handleBack}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    ← Back
+                </button>
+                <button
+                    onClick={() => navigate('/my-bookings')}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                    View Booking Details
+                </button>
+            </div>
         </div>
     )
 }
