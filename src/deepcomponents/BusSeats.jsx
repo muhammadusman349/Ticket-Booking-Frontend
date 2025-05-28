@@ -1,63 +1,69 @@
-import axios from 'axios'
-import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const BusSeats = ({ token }) => {
-    const [bus, setBus] = useState(null)
-    const [seats, setSeats] = useState([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [selectedSeat, setSelectedSeat] = useState(null)
+    const [bus, setBus] = useState(null);
+    const [seats, setSeats] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [selectedSeat, setSelectedSeat] = useState(null);
+    const [showLoginPopup, setShowLoginPopup] = useState(false);
 
-    const { busId } = useParams()
-    const navigate = useNavigate()
+    const { busId } = useParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchBusDetails = async () => {
             try {
-                const response = await axios(`http://localhost:8000/api/buses/${busId}`)
-                setBus(response.data)
-                setSeats(response.data.seats || [])
+                const response = await axios.get(`http://localhost:8000/api/buses/${busId}`);
+                setBus(response.data);
+                setSeats(response.data.seats || []);
             } catch (error) {
-                console.log('Error in fetching details', error)
-                setError('Failed to load bus details. Please try again later.')
+                console.error('Error fetching bus details:', error);
+                setError('Failed to load bus details. Please try again later.');
             } finally {
-                setIsLoading(false)
+                setIsLoading(false);
             }
-        }
-        fetchBusDetails()
-    }, [busId])
+        };
+        fetchBusDetails();
+    }, [busId]);
 
     const handleBack = () => {
-        window.history.back();
+        navigate(-1);
     };
 
     const handleBook = async (seatId) => {
         if (!token) {
-          alert('Please login to book a seat');
-          navigate('/login');
-          return;
+            setShowLoginPopup(true);
+            return;
         }
-      
+
         try {
-          const res = await axios.post(
-            'http://localhost:8000/api/booking/',
-            { seat: seatId },
-            {
-              headers: {
-                Authorization: `Token ${token}`,
-              },
-            }
-          );
-          alert('Booking successful!');
-          setSeats((prevSeats) =>
-            prevSeats.map((seat) =>
-              seat.id === seatId ? { ...seat, is_booked: true } : seat
-            )
-          );
+            setSelectedSeat(seatId);
+            const response = await axios.post(
+                'http://localhost:8000/api/booking/',
+                { seat: seatId },
+                {
+                    headers: {
+                        Authorization: `Token ${token}`,
+                    },
+                }
+            );
+            
+            setSeats(prevSeats => 
+                prevSeats.map(seat => 
+                    seat.id === seatId ? { ...seat, is_booked: true } : seat
+                )
+            );
         } catch (error) {
-          alert(error.response?.data?.error || 'Please login to book a seat')
-          navigate('/login');
+            console.error('Booking failed:', error);
+            if (error.response?.status === 401) {
+                localStorage.setItem('redirectAfterLogin', `/buses/${busId}`);
+                navigate('/login');
+            }
+        } finally {
+            setSelectedSeat(null);
         }
     };
 
@@ -66,7 +72,7 @@ const BusSeats = ({ token }) => {
             <div className="flex justify-center items-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             </div>
-        )
+        );
     }
 
     if (error) {
@@ -85,17 +91,19 @@ const BusSeats = ({ token }) => {
                     </button>
                 </div>
             </div>
-        )
+        );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 relative">
+            {/* Bus Details Card */}
             {bus && (
                 <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                     <div className="p-6">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">{bus.bus_name}</h1>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Journey Details Column */}
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">Journey Details</h3>
                                 <div className="space-y-2">
@@ -126,7 +134,8 @@ const BusSeats = ({ token }) => {
                                     </p>
                                 </div>
                             </div>
-                            
+
+                            {/* Seat Legend Column */}
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">Seat Legend</h3>
                                 <div className="flex flex-wrap gap-4">
@@ -149,6 +158,7 @@ const BusSeats = ({ token }) => {
                 </div>
             )}
 
+            {/* Seat Selection Grid */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                 <div className="p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-6">Select Your Seat</h2>
@@ -186,6 +196,7 @@ const BusSeats = ({ token }) => {
                 </div>
             </div>
 
+            {/* Action Buttons */}
             <div className="flex justify-between">
                 <button
                     onClick={handleBack}
@@ -193,15 +204,44 @@ const BusSeats = ({ token }) => {
                 >
                     ← Back
                 </button>
-                <button
-                    onClick={() => navigate('/my-bookings')}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                    View Booking Details
-                </button>
+                {token && (
+                    <button
+                        onClick={() => navigate('/my-bookings')}
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                    >
+                        View My Bookings
+                    </button>
+                )}
             </div>
-        </div>
-    )
-}
 
-export default BusSeats
+            {/* Login Popup Modal */}
+            {showLoginPopup && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">Login Required</h3>
+                        <p className="text-gray-600 mb-6">Please login to book a seat.</p>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={() => setShowLoginPopup(false)}
+                                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    localStorage.setItem('redirectAfterLogin', `/buses/${busId}`);
+                                    navigate('/login');
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Go to Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default BusSeats;
